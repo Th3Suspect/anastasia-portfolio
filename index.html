@@ -110,6 +110,14 @@ footer{padding:24px 46px;display:flex;justify-content:space-between;flex-wrap:wr
   footer{padding:22px}
 }
 @media(max-width:560px){.grid{grid-template-columns:1fr}.srow .name{font-size:24px}}
+/* ── переход между страницами + кнопка «наверх» ── */
+@keyframes pageIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+body{animation:pageIn .55s cubic-bezier(.2,.7,.2,1) both}
+html.exit body{opacity:0;transform:translateY(-16px);transition:opacity .38s ease,transform .4s cubic-bezier(.2,.7,.2,1)}
+.totop{position:fixed;right:22px;bottom:22px;z-index:60;width:46px;height:46px;border-radius:50%;border:1px solid rgba(0,0,0,.12);background:rgba(251,250,247,.7);backdrop-filter:blur(14px) saturate(1.6);-webkit-backdrop-filter:blur(14px) saturate(1.6);box-shadow:0 8px 24px rgba(30,25,20,.12);cursor:pointer;color:#191817;font-family:'Space Mono',monospace;font-size:16px;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(14px) scale(.9);pointer-events:none;transition:opacity .4s,transform .4s,background .3s,color .3s}
+.totop.show{opacity:1;transform:none;pointer-events:auto}
+.totop:hover{background:#191817;color:#fbfaf7;border-color:#191817}
+@media(prefers-reduced-motion:reduce){body{animation:none}html.exit body{transition:none;opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -288,6 +296,39 @@ footer{padding:24px 46px;display:flex;justify-content:space-between;flex-wrap:wr
   Promise.all(WORKS.map(loadMeta)).then(function () {
     buildGrid();
     setLang(curLang);
+  });
+})();
+</script>
+
+<button class="totop" id="totop" aria-label="Наверх" title="Наверх">↑</button>
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var btn = document.getElementById('totop');
+  function onScroll() { if (btn) btn.classList.toggle('show', window.pageYOffset > 560); }
+  window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  if (btn) btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
+
+  function pageLink(a) {
+    var href = a.getAttribute('href') || '';
+    if (!href || href.charAt(0) === '#') return false;
+    if (/^(mailto:|tel:|https?:)/i.test(href)) return false;
+    if (a.target === '_blank') return false;
+    return /\.html(\?|#|$)/i.test(href);
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest ? e.target.closest('a') : null;
+    if (!a || !pageLink(a)) return;
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+    e.preventDefault();
+    var url = a.href;
+    if (reduce) { window.location.href = url; return; }
+    document.body.style.animation = 'none';
+    document.documentElement.classList.add('exit');
+    setTimeout(function () { window.location.href = url; }, 360);
+  });
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) { document.documentElement.classList.remove('exit'); document.body.style.animation = ''; }
   });
 })();
 </script>
