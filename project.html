@@ -80,6 +80,9 @@ header{position:sticky;top:0;z-index:50;display:flex;justify-content:space-betwe
   .cstage{height:min(78vh,580px)}
   .cstage::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(to top,rgba(0,0,0,.78),rgba(0,0,0,.18) 44%,rgba(0,0,0,0) 68%)}
   .cpanel{display:contents}
+  /* без размытых полей: кадр заполняет сцену */
+  .slide .bg{display:none}
+  .slide .ph{width:100%;height:100%;max-width:none;max-height:none;object-fit:cover}
   /* текст поверх нижней части картинки, с отступами */
   .ctext{position:absolute;left:0;right:0;top:0;z-index:4;height:min(78vh,580px);display:flex;flex-direction:column;justify-content:flex-end;padding:22px 24px 24px;pointer-events:none}
   .cnum{font-size:26px;color:#fff}
