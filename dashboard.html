@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Дашборд — Анастасия</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,'Segoe UI',sans-serif;background:#f4f2ec;color:#1c1a17;font-size:14px}
+.top{position:sticky;top:0;z-index:10;display:flex;gap:10px;align-items:center;padding:12px 18px;background:#191817;color:#fbfaf7}
+.top b{font-size:15px;margin-right:8px}
+button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:9px 14px;background:#2b2926;color:#fbfaf7;transition:background .2s}
+button:hover{background:#3a3733}
+button.pri{background:#c9a15a;color:#191817}
+button.pri:hover{background:#d8b06a}
+button.sm{padding:5px 10px;font-size:12px;border-radius:6px}
+button.danger{background:#7a2b2b}
+.status{margin-left:auto;font-size:12px;opacity:.8}
+.wrap{display:flex;min-height:calc(100vh - 52px)}
+.side{width:190px;flex:none;background:#e7e3da;border-right:1px solid rgba(0,0,0,.1);padding:12px 0}
+.side a{display:block;padding:11px 18px;cursor:pointer;font-weight:500;color:#3a352d}
+.side a.on{background:#f4f2ec;border-left:3px solid #c9a15a;padding-left:15px}
+.main{flex:1;padding:22px 26px;max-width:900px}
+h2{font-size:18px;margin:0 0 4px}
+.hint{color:#726a5c;font-size:12.5px;margin:0 0 18px;line-height:1.5}
+.card{background:#fbfaf7;border:1px solid rgba(0,0,0,.09);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+.row:last-child{margin-bottom:0}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#8a8172;margin-bottom:4px}
+input,textarea,select{width:100%;font:inherit;padding:8px 10px;border:1px solid rgba(0,0,0,.16);border-radius:7px;background:#fff;color:#1c1a17}
+textarea{resize:vertical;min-height:56px;line-height:1.5}
+.f{flex:1;min-width:180px}
+.f.sm{flex:0 0 130px;min-width:110px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.lng{border:1px solid rgba(0,0,0,.1);border-radius:10px;padding:12px 14px;background:#faf8f2}
+.lng h4{margin:0 0 10px;font-size:13px;color:#8a6a2a;text-transform:uppercase;letter-spacing:.06em}
+.head{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.pill{font-size:11px;background:#eee7d6;color:#8a6a2a;border-radius:100px;padding:4px 10px}
+.imgs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.imgs figure{margin:0;width:70px}
+.imgs img{width:70px;height:90px;object-fit:cover;border-radius:6px;border:1px solid rgba(0,0,0,.12);background:#e7e3da}
+.imgs figcaption{font-size:10px;color:#8a8172;text-align:center;margin-top:3px;word-break:break-all}
+.warn{background:#fff3d6;border:1px solid #e6c874;color:#6b5416;padding:14px 16px;border-radius:10px;margin-bottom:16px;line-height:1.5}
+.muted{color:#8a8172;font-size:12px}
+code{background:#eee7d6;padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="top">
+  <b>Дашборд · Анастасия</b>
+  <button class="pri" id="openBtn">Открыть папку проекта</button>
+  <button id="saveBtn" style="display:none">💾 Сохранить всё</button>
+  <span class="status" id="status">Папка не открыта</span>
+</div>
+<div class="wrap">
+  <nav class="side" id="side" style="display:none">
+    <a data-tab="projects" class="on">Проекты</a>
+    <a data-tab="models">Модели</a>
+    <a data-tab="texts">Тексты сайта</a>
+    <a data-tab="order">Порядок</a>
+    <a data-tab="help">Как это работает</a>
+  </nav>
+  <main class="main" id="main">
+    <div class="warn" id="intro">
+      <b>Панель управления сайтом.</b><br>
+      Нажми «Открыть папку проекта» и выбери папку <code>design_handoff_portfolio</code>.
+      Правь тексты, проекты, модели, загружай картинки — и жми «Сохранить всё»: изменения
+      пишутся прямо в файлы.<br><br>
+      ⚠️ Нужен <b>Chrome</b> или <b>Edge</b> на компьютере (Safari/Firefox не умеют писать файлы из браузера).
+      Открывать через <code>http://localhost</code> или прямо файл — оба варианта работают в Chrome.
+    </div>
+  </main>
+</div>
+
+<script>
+"use strict";
+var root=null, CONTENT={ru:{},en:{}}, MODELS=[], PROJECTS={}, WORKS=[], ORDER=[];
+var indexText="", projText="", deletedProjects=[], tab="projects", curProj=null, curModel=0;
+var $=function(s,r){return (r||document).querySelector(s);};
+function el(tag,attrs,html){var e=document.createElement(tag);if(attrs)for(var k in attrs)e.setAttribute(k,attrs[k]);if(html!=null)e.innerHTML=html;return e;}
+function status(t){$("#status").textContent=t;}
+
+/* ── утилиты массив↔текст ── */
+function lines(a){return (a||[]).join("\n");}
+function toLines(s){return s.split("\n").map(function(x){return x.trim();}).filter(Boolean);}
+function csv(a){return (a||[]).join(", ");}
+function toCsv(s){return s.split(",").map(function(x){return x.trim();}).filter(Boolean);}
+function jsPretty(v){return JSON.stringify(v,null,2);}
+
+/* ── File System Access ── */
+async function readText(path){
+  var parts=path.split("/"),dir=root;
+  for(var i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i]);
+  var fh=await dir.getFileHandle(parts[parts.length-1]);
+  return await (await fh.getFile()).text();
+}
+async function writeText(path,text){
+  var parts=path.split("/"),dir=root;
+  for(var i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i],{create:true});
+  var fh=await dir.getFileHandle(parts[parts.length-1],{create:true});
+  var w=await fh.createWritable();await w.write(text);await w.close();
+}
+async function writeBinary(path,buf){
+  var parts=path.split("/"),dir=root;
+  for(var i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i],{create:true});
+  var fh=await dir.getFileHandle(parts[parts.length-1],{create:true});
+  var w=await fh.createWritable();await w.write(buf);await w.close();
+}
+async function removeFile(path){
+  try{var parts=path.split("/"),dir=root;
+  for(var i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i]);
+  await dir.removeEntry(parts[parts.length-1]);}catch(e){}
+}
+function runScript(text,win){ new Function("window",text)(win); }
+
+async function openFolder(){
+  if(!window.showDirectoryPicker){alert("Нужен Chrome или Edge на компьютере.");return;}
+  try{ root=await window.showDirectoryPicker({mode:"readwrite"}); }catch(e){return;}
+  try{ if((await root.requestPermission({mode:"readwrite"}))!=="granted"){alert("Нет доступа на запись.");return;} }catch(e){}
+  await loadAll();
+  $("#intro").style.display="none";
+  $("#side").style.display="block";
+  $("#saveBtn").style.display="inline-block";
+  status("Папка открыта · "+root.name);
+  render();
+}
+
+async function loadAll(){
+  var win={PROJECTS:{}};
+  runScript(await readText("content.js"),win); CONTENT=win.CONTENT||{ru:{},en:{}};
+  runScript(await readText("models.js"),win); MODELS=win.MODELS||[];
+  var pd=await root.getDirectoryHandle("projects");
+  for await(var ent of pd.values()){
+    if(ent.kind==="file"&&ent.name.endsWith(".js")){
+      runScript(await (await ent.getFile()).text(),win);
+    }
+  }
+  PROJECTS=win.PROJECTS||{};
+  indexText=await readText("index.html");
+  projText=await readText("project.html");
+  try{WORKS=JSON.parse((/var WORKS\s*=\s*(\[[^\]]*\])/.exec(indexText)||[])[1]||"[]");}catch(e){WORKS=[];}
+  try{ORDER=JSON.parse((/var ORDER\s*=\s*(\[[^\]]*\])/.exec(projText)||[])[1]||"[]");}catch(e){ORDER=[];}
+  deletedProjects=[];
+  curProj=Object.keys(PROJECTS)[0]||null; curModel=0;
+}
+
+async function saveAll(){
+  status("Сохранение…");
+  try{
+    await writeText("content.js","/* Тексты сайта — RU / EN. Редактируется через dashboard.html */\nwindow.CONTENT = "+jsPretty(CONTENT)+";\n");
+    await writeText("models.js","/* Модели — RU / EN. Редактируется через dashboard.html */\nwindow.MODELS = "+jsPretty(MODELS)+";\n");
+    for(var id in PROJECTS){
+      await writeText("projects/"+id+".js",
+        "/* Проект «"+id+"» — RU / EN. Редактируется через dashboard.html */\n"+
+        "(window.PROJECTS = window.PROJECTS || {})[\""+id+"\"] = window.PROJECT = "+jsPretty(PROJECTS[id])+";\n");
+    }
+    for(var i=0;i<deletedProjects.length;i++) await removeFile("projects/"+deletedProjects[i]+".js");
+    deletedProjects=[];
+    indexText=indexText.replace(/var WORKS\s*=\s*\[[^\]]*\]/,"var WORKS = "+JSON.stringify(WORKS));
+    projText=projText.replace(/var ORDER\s*=\s*\[[^\]]*\]/,"var ORDER = "+JSON.stringify(ORDER));
+    await writeText("index.html",indexText);
+    await writeText("project.html",projText);
+    status("✓ Сохранено "+new Date().toLocaleTimeString());
+  }catch(e){ status("Ошибка: "+e.message); alert("Ошибка сохранения: "+e.message); }
+}
+
+/* ── навигация ── */
+document.addEventListener("click",function(e){
+  var a=e.target.closest("[data-tab]"); if(!a)return;
+  tab=a.getAttribute("data-tab");
+  [].forEach.call(document.querySelectorAll(".side a"),function(x){x.classList.toggle("on",x===a);});
+  render();
+});
+$("#openBtn").addEventListener("click",openFolder);
+$("#saveBtn").addEventListener("click",saveAll);
+
+/* ── рендер вкладок ── */
+function render(){
+  var m=$("#main");
+  if(tab==="projects")m.innerHTML="",m.appendChild(renderProjects());
+  else if(tab==="models")m.innerHTML="",m.appendChild(renderModels());
+  else if(tab==="texts")m.innerHTML="",m.appendChild(renderTexts());
+  else if(tab==="order")m.innerHTML="",m.appendChild(renderOrder());
+  else m.innerHTML=helpHTML();
+}
+
+/* helper: labelled field bound to obj[key] */
+function field(obj,key,label,type,opts){
+  var wrap=el("div",{class:"f"+(opts&&opts.sm?" sm":"")});
+  wrap.appendChild(el("label",null,label));
+  var inp;
+  if(type==="textarea"){inp=el("textarea");inp.value=obj[key]!=null?obj[key]:"";}
+  else if(type==="select"){inp=el("select");(opts.options||[]).forEach(function(o){var op=el("option",{value:o},o);if(obj[key]===o)op.setAttribute("selected","");inp.appendChild(op);});}
+  else{inp=el("input",{type:"text"});inp.value=obj[key]!=null?obj[key]:"";}
+  inp.addEventListener("input",function(){obj[key]=inp.value;});
+  if(opts&&opts.rows)inp.style.minHeight=opts.rows*22+"px";
+  wrap.appendChild(inp);
+  return wrap;
+}
+/* array field: obj[key] is array, edited as textarea lines (or csv) */
+function arrField(obj,key,label,mode){
+  var wrap=el("div",{class:"f"});
+  wrap.appendChild(el("label",null,label));
+  var inp=el("textarea");
+  inp.value=(mode==="csv")?csv(obj[key]):lines(obj[key]);
+  inp.addEventListener("input",function(){obj[key]=(mode==="csv")?toCsv(inp.value):toLines(inp.value);});
+  wrap.appendChild(inp);
+  return wrap;
+}
+
+/* ── ПРОЕКТЫ ── */
+function renderProjects(){
+  var box=el("div");
+  box.appendChild(el("h2",null,"Проекты"));
+  box.appendChild(el("p",{class:"hint"},"Выбери проект или создай новый. Порядок плиток на главной — во вкладке «Порядок». Картинки грузятся в папку проекта."));
+  var head=el("div",{class:"head"});
+  var sel=el("select");sel.style.maxWidth="260px";
+  Object.keys(PROJECTS).forEach(function(id){var o=el("option",{value:id},(PROJECTS[id].ru&&PROJECTS[id].ru.title||id)+"  ["+id+"]");if(id===curProj)o.setAttribute("selected","");sel.appendChild(o);});
+  sel.addEventListener("change",function(){curProj=sel.value;render();});
+  head.appendChild(sel);
+  var add=el("button",{class:"sm"},"＋ Новый");add.onclick=addProject;head.appendChild(add);
+  if(curProj){var del=el("button",{class:"sm danger"},"🗑 Удалить");del.onclick=function(){deleteProject(curProj);};head.appendChild(del);}
+  box.appendChild(head);
+  if(!curProj){box.appendChild(el("p",{class:"muted"},"Проектов нет — создай новый."));return box;}
+  var p=PROJECTS[curProj];
+  if(!p.ru)p.ru={};if(!p.en)p.en={};
+
+  var c1=el("div",{class:"card"});
+  var r1=el("div",{class:"row"});
+  r1.appendChild(field(p,"fig","FIG (номер)","text",{sm:1}));
+  r1.appendChild(field(p,"orientation","Ориентация","select",{options:["vertical","horizontal"]}));
+  r1.appendChild(field(p,"image","Обложка (путь)","text"));
+  c1.appendChild(r1);
+  c1.appendChild(arrField(p,"gallery","Кадры карусели (по одному пути в строке)","lines"));
+  // upload images
+  var up=el("div",{class:"row"});
+  var lab=el("label",null,"Загрузить кадр в галерею");
+  var fi=el("input",{type:"file",accept:"image/*"});
+  fi.addEventListener("change",function(){if(fi.files[0])uploadGallery(p,fi.files[0]);});
+  var upw=el("div",{class:"f"});upw.appendChild(lab);upw.appendChild(fi);up.appendChild(upw);
+  c1.appendChild(up);
+  box.appendChild(c1);
+
+  // source (product)
+  var cs=el("div",{class:"card"});
+  cs.appendChild(el("h4",{style:"margin:0 0 10px;color:#8a6a2a"},"Исходный продукт (до/после)"));
+  if(!p.source)p.source={ru:{},en:{}};if(!p.source.ru)p.source.ru={};if(!p.source.en)p.source.en={};
+  cs.appendChild(field(p.source,"image","Фото продукта (путь; пусто = reference.jpg из папки)","text"));
+  var rs=el("div",{class:"two"});
+  var rsru=el("div",{class:"lng"});rsru.appendChild(el("h4",null,"RU"));rsru.appendChild(field(p.source.ru,"name","Название/бренд","text"));rsru.appendChild(field(p.source.ru,"note","Заметка","textarea"));
+  var rsen=el("div",{class:"lng"});rsen.appendChild(el("h4",null,"EN"));rsen.appendChild(field(p.source.en,"name","Name/brand","text"));rsen.appendChild(field(p.source.en,"note","Note","textarea"));
+  rs.appendChild(rsru);rs.appendChild(rsen);cs.appendChild(rs);
+  var upr=el("div",{class:"row"});var labr=el("label",null,"Загрузить фото продукта (reference)");var fir=el("input",{type:"file",accept:"image/*"});
+  fir.addEventListener("change",function(){if(fir.files[0])uploadReference(p,fir.files[0]);});
+  var uprw=el("div",{class:"f"});uprw.appendChild(labr);uprw.appendChild(fir);upr.appendChild(uprw);cs.appendChild(upr);
+  box.appendChild(cs);
+
+  // ru / en text
+  var two=el("div",{class:"two"});
+  two.appendChild(projLang(p.ru,"RU"));
+  two.appendChild(projLang(p.en,"EN"));
+  box.appendChild(two);
+  return box;
+}
+function projLang(o,title){
+  var d=el("div",{class:"lng"});d.appendChild(el("h4",null,title));
+  d.appendChild(field(o,"title","Название","text"));
+  var r=el("div",{class:"row"});r.appendChild(field(o,"year","Год","text",{sm:1}));r.appendChild(field(o,"meta","Подзаголовок","text"));d.appendChild(r);
+  d.appendChild(arrField(o,"tags","Теги (через запятую)","csv"));
+  d.appendChild(field(o,"lead","Короткое описание (на плитке/hero)","textarea"));
+  d.appendChild(arrField(o,"captions","Заголовки кадров (строка = кадр)","lines"));
+  d.appendChild(arrField(o,"notes","Текст кадров (строка = кадр)","lines"));
+  d.appendChild(arrField(o,"body","Абзацы описания (строка = абзац)","lines"));
+  return d;
+}
+function addProject(){
+  var id=prompt("ID проекта (латиница/цифры, напр. summer):");if(!id)return;
+  id=id.trim().toLowerCase().replace(/[^a-z0-9_-]/g,"");if(!id||PROJECTS[id]){alert("Пустой или занятый id");return;}
+  PROJECTS[id]={id:id,fig:"FIG.00",image:"assets/Projects/"+id+"/1.jpg",orientation:"vertical",gallery:[],
+    ru:{title:id,year:"2026",meta:"",tags:[],lead:"",captions:[],notes:[],body:[]},
+    en:{title:id,year:"2026",meta:"",tags:[],lead:"",captions:[],notes:[],body:[]}};
+  if(WORKS.indexOf(id)<0)WORKS.push(id);
+  if(ORDER.indexOf(id)<0)ORDER.push(id);
+  curProj=id;render();
+}
+function deleteProject(id){
+  if(!confirm("Удалить проект «"+id+"»? Файл projects/"+id+".js будет удалён при сохранении."))return;
+  delete PROJECTS[id];deletedProjects.push(id);
+  WORKS=WORKS.filter(function(x){return x!==id;});ORDER=ORDER.filter(function(x){return x!==id;});
+  curProj=Object.keys(PROJECTS)[0]||null;render();
+}
+function dirOf(path){return (path||"").replace(/[^/]+$/,"");}
+async function uploadGallery(p,file){
+  var dir=dirOf(p.image)||("assets/Projects/"+p.id+"/");
+  var ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+  var n=(p.gallery&&p.gallery.length||0)+1;
+  var path=dir+n+"."+ext;
+  await writeBinary(path,await file.arrayBuffer());
+  p.gallery=p.gallery||[];p.gallery.push(path);
+  if(!p.image)p.image=path;
+  status("Загружено: "+path);render();
+}
+async function uploadReference(p,file){
+  var dir=dirOf(p.image)||("assets/Projects/"+p.id+"/");
+  var ext=(file.name.split(".").pop()||"png").toLowerCase();
+  var path=dir+"reference."+ext;
+  await writeBinary(path,await file.arrayBuffer());
+  if(!p.source)p.source={ru:{},en:{}};p.source.image=path;
+  status("Исходник загружен: "+path);render();
+}
+
+/* ── МОДЕЛИ ── */
+function renderModels(){
+  var box=el("div");
+  box.appendChild(el("h2",null,"Модели"));
+  box.appendChild(el("p",{class:"hint"},"Музы на странице «Модели». Палитра — 4 цвета фоновых волн (hex через запятую)."));
+  var head=el("div",{class:"head"});
+  var sel=el("select");sel.style.maxWidth="260px";
+  MODELS.forEach(function(m,i){var o=el("option",{value:i},(m.name||m.id)+"  ["+m.id+"]");if(i===curModel)o.setAttribute("selected","");sel.appendChild(o);});
+  sel.addEventListener("change",function(){curModel=+sel.value;render();});
+  head.appendChild(sel);
+  var add=el("button",{class:"sm"},"＋ Новая");add.onclick=addModel;head.appendChild(add);
+  if(MODELS.length){var del=el("button",{class:"sm danger"},"🗑 Удалить");del.onclick=function(){delModel(curModel);};head.appendChild(del);}
+  box.appendChild(head);
+  if(!MODELS.length){box.appendChild(el("p",{class:"muted"},"Моделей нет."));return box;}
+  var m=MODELS[curModel];if(!m.ru)m.ru={};if(!m.en)m.en={};
+  var c=el("div",{class:"card"});
+  var r=el("div",{class:"row"});
+  r.appendChild(field(m,"id","ID (якорь)","text",{sm:1}));
+  r.appendChild(field(m,"name","Имя","text",{sm:1}));
+  r.appendChild(field(m,"image","Фото (путь)","text"));
+  c.appendChild(r);
+  var rp=el("div",{class:"row"});
+  var pf=el("div",{class:"f"});pf.appendChild(el("label",null,"Палитра волн (4 hex через запятую)"));
+  var pin=el("input",{type:"text"});pin.value=csv(m.palette);pin.addEventListener("input",function(){m.palette=toCsv(pin.value);});pf.appendChild(pin);rp.appendChild(pf);
+  var up=el("div",{class:"f"});up.appendChild(el("label",null,"Загрузить фото"));var fi=el("input",{type:"file",accept:"image/*"});fi.addEventListener("change",function(){if(fi.files[0])uploadModel(m,fi.files[0]);});up.appendChild(fi);rp.appendChild(up);
+  c.appendChild(rp);box.appendChild(c);
+  var two=el("div",{class:"two"});
+  two.appendChild(modelLang(m.ru,"RU"));two.appendChild(modelLang(m.en,"EN"));
+  box.appendChild(two);
+  return box;
+}
+function modelLang(o,title){
+  var d=el("div",{class:"lng"});d.appendChild(el("h4",null,title));
+  d.appendChild(field(o,"role","Роль/тэглайн","text"));
+  d.appendChild(field(o,"meta","Подзаголовок","text"));
+  d.appendChild(arrField(o,"tags","Теги (через запятую)","csv"));
+  d.appendChild(arrField(o,"body","Абзацы (строка = абзац)","lines"));
+  return d;
+}
+function addModel(){
+  var id=prompt("ID модели (латиница):");if(!id)return;id=id.trim().toLowerCase().replace(/[^a-z0-9_-]/g,"");if(!id)return;
+  MODELS.push({id:id,name:id,image:"assets/Models/"+id+"/1.png",palette:["#e8e5de","#dcd7cf","#e6ddd6","#d3d9de"],
+    ru:{role:"",meta:"",tags:[],body:[]},en:{role:"",meta:"",tags:[],body:[]}});
+  curModel=MODELS.length-1;render();
+}
+function delModel(i){if(!confirm("Удалить модель?"))return;MODELS.splice(i,1);curModel=0;render();}
+async function uploadModel(m,file){
+  var dir=dirOf(m.image)||("assets/Models/"+m.id+"/");var ext=(file.name.split(".").pop()||"png").toLowerCase();
+  var path=dir+"1."+ext;await writeBinary(path,await file.arrayBuffer());m.image=path;status("Загружено: "+path);render();
+}
+
+/* ── ТЕКСТЫ САЙТА ── */
+function renderTexts(){
+  var box=el("div");
+  box.appendChild(el("h2",null,"Тексты сайта"));
+  box.appendChild(el("p",{class:"hint"},"Тексты главной страницы (content.js). Слева ключ, поля RU и EN. \\n — перенос строки."));
+  var keys=Object.keys(CONTENT.ru||{});
+  keys.forEach(function(k){
+    var c=el("div",{class:"card"});
+    c.appendChild(el("div",{class:"pill",style:"display:inline-block;margin-bottom:8px"},k));
+    var two=el("div",{class:"two"});
+    var ru=el("div");ru.appendChild(el("label",null,"RU"));var ir=el("input",{type:"text"});ir.value=CONTENT.ru[k]||"";ir.addEventListener("input",function(){CONTENT.ru[k]=ir.value;});ru.appendChild(ir);
+    var en=el("div");en.appendChild(el("label",null,"EN"));var ie=el("input",{type:"text"});ie.value=(CONTENT.en&&CONTENT.en[k])||"";ie.addEventListener("input",function(){CONTENT.en=CONTENT.en||{};CONTENT.en[k]=ie.value;});en.appendChild(ie);
+    two.appendChild(ru);two.appendChild(en);c.appendChild(two);box.appendChild(c);
+  });
+  return box;
+}
+
+/* ── ПОРЯДОК ── */
+function renderOrder(){
+  var box=el("div");
+  box.appendChild(el("h2",null,"Порядок"));
+  box.appendChild(el("p",{class:"hint"},"ID проектов по порядку. WORKS — плитки на главной. ORDER — очерёдность стрелки «следующая работа». По одному id в строке."));
+  var c=el("div",{class:"card"});
+  var two=el("div",{class:"two"});
+  var w=el("div");w.appendChild(el("label",null,"WORKS (главная)"));var tw=el("textarea");tw.style.minHeight="220px";tw.value=lines(WORKS);tw.addEventListener("input",function(){WORKS=toLines(tw.value);});w.appendChild(tw);
+  var o=el("div");o.appendChild(el("label",null,"ORDER (стрелка «следующая»)"));var to=el("textarea");to.style.minHeight="220px";to.value=lines(ORDER);to.addEventListener("input",function(){ORDER=toLines(to.value);});o.appendChild(to);
+  two.appendChild(w);two.appendChild(o);c.appendChild(two);box.appendChild(c);
+  box.appendChild(el("p",{class:"muted"},"Доступные id: "+Object.keys(PROJECTS).join(", ")));
+  return box;
+}
+
+function helpHTML(){
+  return '<h2>Как это работает</h2>'+
+  '<div class="card" style="line-height:1.65">'+
+  '<p><b>1.</b> «Открыть папку проекта» → выбери корень сайта (где index.html).</p>'+
+  '<p><b>2.</b> Правь во вкладках: <b>Проекты</b>, <b>Модели</b>, <b>Тексты сайта</b>, <b>Порядок</b>. Загружай картинки прямо в форме.</p>'+
+  '<p><b>3.</b> «💾 Сохранить всё» — пишет изменения в файлы (content.js, models.js, projects/*.js, index.html, project.html) и картинки в assets/.</p>'+
+  '<p><b>4.</b> Чтобы опубликовать: в терминале <code>git add -A &amp;&amp; git commit -m "update" &amp;&amp; git push</code>. Сайт обновится через ~1 мин.</p>'+
+  '<p class="muted">Работает в Chrome/Edge. Комментарии в JS-файлах при сохранении не сохраняются — это нормально, сайт от этого не ломается.</p>'+
+  '</div>';
+}
+</script>
+</body>
+</html>

@@ -8,6 +8,7 @@
   orientation: "vertical",   // "vertical" | "horizontal" — высота карусели «Детали»
   // исходный продукт (до/после). Фото — assets/Projects/Catalogue/reference.jpg (берётся автоматически из папки)
   source: {
+    image: "assets/Projects/Catalogue/reference.PNG",
     ru: { name: "BERTA LINE · Чулки", note: "Каталожное фото изделия — точка старта серии." },
     en: { name: "BERTA LINE · Tights", note: "Catalogue product shot — the starting point of the series." }
   },
