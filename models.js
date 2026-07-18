@@ -79,5 +79,31 @@ window.MODELS = [
         "Featured in “Studio” and “Wool”."
       ]
     }
+  },
+    {
+    id: "naomi",
+    name: "Naomi",
+    image: "assets/Models/Naomi/1.png",
+    palette: ["#a9caea", "#8bb4e0", "#c0d9ef", "#77a6d8"],  // синий океан · необъятность
+    ru: {
+      role: "Графика и контраст",
+      meta: "Муза · серии «Studio», «Wool»",
+      tags: ["Контраст", "Графичность", "Характер"],
+      body: [
+        "Наоми — сильный графичный образ: выразительные черты, жёсткий контраст, уверенный характер.",
+        "Идеальна для смелых, почти плакатных кадров, где важен силуэт и драма света.",
+        "Появлялась в «Studio» и «Wool»."
+      ]
+    },
+    en: {
+      role: "Graphic & contrast",
+      meta: "Muse · series “Studio”, “Wool”",
+      tags: ["Contrast", "Graphic", "Character"],
+      body: [
+        "Naomi is a strong graphic image: expressive features, hard contrast, a confident character.",
+        "Perfect for bold, almost poster-like frames where silhouette and the drama of light matter.",
+        "Featured in “Studio” and “Wool”."
+      ]
+    }
   }
 ];

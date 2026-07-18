@@ -38,6 +38,24 @@ header{position:sticky;top:0;z-index:50;display:flex;justify-content:space-betwe
 .body p{margin:0 0 16px}.body p:last-child{margin:0}
 .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:30px}
 .tag{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(0,0,0,.55);border:1px solid rgba(0,0,0,.16);border-radius:100px;padding:6px 12px}
+/* ── «От продукта — к образу» (до/после) ── */
+.source{padding:8px 46px 44px}
+.ba{display:grid;grid-template-columns:1fr auto 1fr;gap:34px;align-items:center;margin-top:6px}
+.ba-item{margin:0;min-width:0}
+.ba-fig{aspect-ratio:3/4;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.08)}
+.ba-fig.prod{background:#fff}
+.ba-fig.prod img{width:100%;height:100%;object-fit:contain;padding:6%}
+.ba-fig.final{background:#eceae4}
+.ba-fig.final img{width:100%;height:100%;object-fit:cover}
+.ba-cap{margin-top:12px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(0,0,0,.42)}
+.ba-cap b{color:#191817;font-weight:700}
+.ba-note{display:block;margin-top:5px;font-family:'Archivo',sans-serif;font-size:12.5px;letter-spacing:0;text-transform:none;color:rgba(0,0,0,.55)}
+.ba-arrow{font-family:'Instrument Serif',serif;font-size:44px;color:rgba(0,0,0,.34);line-height:1}
+@media(max-width:820px){
+  .source{padding:4px 22px 34px}
+  .ba{grid-template-columns:1fr;gap:14px}
+  .ba-arrow{justify-self:center;transform:rotate(90deg);font-size:34px}
+}
 /* ── Details carousel ── */
 .gallery{padding:8px 46px 40px}
 .galhd{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid rgba(0,0,0,.14);padding-top:20px;margin-bottom:22px}
@@ -137,11 +155,11 @@ footer{padding:24px 46px;display:flex;justify-content:space-between;flex-wrap:wr
 (function () {
   // строки самой страницы (не проекта) — RU / EN
   var UI = {
-    ru: { back: "← Все работы", loading: "Загрузка…", notfound: "Проект не найден", next: "Следующая работа →", details: "Детали", footer: "Генеративные изображения · Москва" },
-    en: { back: "← All work",   loading: "Loading…",  notfound: "Project not found", next: "Next work →",        details: "Details", footer: "Generative imagery · Moscow" }
+    ru: { back: "← Все работы", loading: "Загрузка…", notfound: "Проект не найден", next: "Следующая работа →", details: "Детали", footer: "Генеративные изображения · Москва", fromproduct: "От продукта — к образу", original: "Исходный продукт", result: "Финальный образ" },
+    en: { back: "← All work",   loading: "Loading…",  notfound: "Project not found", next: "Next work →",        details: "Details", footer: "Generative imagery · Moscow", fromproduct: "From product to image", original: "Original product", result: "Final image" }
   };
   // порядок работ = порядок в галерее (для ссылки «следующая»)
-  var ORDER = ["elevator", "w5", "w2", "w7", "w1", "w3", "w4", "w6"];
+  var ORDER = ["elevator", "w5", "w2", "w7", "w1", "w3", "w4", "w6", "catalogue"];
   var VALID = /^[A-Za-z0-9_-]+$/;  // id = имя файла в projects/, без путей
 
   function param(name) {
@@ -222,6 +240,29 @@ footer{padding:24px 46px;display:flex;justify-content:space-between;flex-wrap:wr
         "</section>";
     }
 
+    // «От продукта — к образу»: reference.jpg из папки проекта (или p.source.image); блок сам исчезает, если файла нет
+    var refImg = (p.source && p.source.image) || (p.image ? p.image.replace(/[^\/]+$/, "reference.jpg") : "");
+    var so = (p.source && (p.source[lang] || p.source.ru)) || {};
+    var srcBlock = refImg ? (
+      '<section class="source">' +
+        '<div class="galhd"><span class="gt">' + esc(UI[lang].fromproduct) + "</span></div>" +
+        '<div class="ba">' +
+          '<figure class="ba-item">' +
+            '<div class="ba-fig prod"><img src="' + esc(refImg) + '" alt="" onerror="var s=this.closest(\'.source\');if(s)s.remove()"></div>' +
+            '<figcaption class="ba-cap">' + esc(UI[lang].original) +
+              (so.name ? ' · <b>' + esc(so.name) + "</b>" : "") +
+              (so.note ? '<span class="ba-note">' + esc(so.note) + "</span>" : "") +
+            "</figcaption>" +
+          "</figure>" +
+          '<div class="ba-arrow">→</div>' +
+          '<figure class="ba-item">' +
+            '<div class="ba-fig final"><img src="' + esc(p.image) + '" alt=""></div>' +
+            '<figcaption class="ba-cap">' + esc(UI[lang].result) + "</figcaption>" +
+          "</figure>" +
+        "</div>" +
+      "</section>"
+    ) : "";
+
     app.innerHTML =
       '<section class="detail">' +
         '<div class="media rise d1"><img src="' + esc(p.image) + '" alt="' + esc(t.title) + '"></div>' +
@@ -234,6 +275,7 @@ footer{padding:24px 46px;display:flex;justify-content:space-between;flex-wrap:wr
           (tags ? '<div class="tags rise d3">' + tags + "</div>" : "") +
         "</div>" +
       "</section>" +
+      srcBlock +
       carousel +
       '<div class="nextrow">' +
         '<a href="index.html#work"><span class="cta">' + esc(UI[lang].back) + "</span></a>" +
